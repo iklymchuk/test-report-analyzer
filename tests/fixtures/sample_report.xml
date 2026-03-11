@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="Test Suite" tests="15" failures="2" errors="1" skipped="1" time="12.456" timestamp="2026-03-09T10:30:00">
+    <!-- Passed Tests -->
+    <testcase classname="tests.auth.test_login" name="test_login_with_valid_credentials" time="0.123">
+    </testcase>
+    
+    <testcase classname="tests.auth.test_login" name="test_logout_success" time="0.089">
+    </testcase>
+    
+    <testcase classname="tests.auth.test_registration" name="test_register_new_user" time="0.234">
+    </testcase>
+    
+    <testcase classname="tests.api.test_users" name="test_get_user_by_id" time="0.145">
+    </testcase>
+    
+    <testcase classname="tests.api.test_users" name="test_update_user_profile" time="0.198">
+    </testcase>
+    
+    <testcase classname="tests.api.test_products" name="test_list_products" time="0.312">
+    </testcase>
+    
+    <testcase classname="tests.api.test_products" name="test_create_product" time="0.267">
+    </testcase>
+    
+    <testcase classname="tests.services.test_payment" name="test_process_payment_success" time="1.234">
+    </testcase>
+    
+    <testcase classname="tests.services.test_email" name="test_send_welcome_email" time="0.456">
+    </testcase>
+    
+    <testcase classname="tests.integration.test_checkout" name="test_complete_checkout_flow" time="2.345">
+    </testcase>
+    
+    <!-- This test is slow (over 5 seconds) -->
+    <testcase classname="tests.integration.test_reports" name="test_generate_monthly_report" time="6.789">
+    </testcase>
+    
+    <!-- Failed Test -->
+    <testcase classname="tests.services.test_payment" name="test_payment_gateway_timeout" time="5.123">
+        <failure type="TimeoutError" message="Payment gateway did not respond">
+TimeoutError: Payment gateway did not respond within 5 seconds
+
+Traceback (most recent call last):
+  File "tests/services/test_payment.py", line 45, in test_payment_gateway_timeout
+    response = payment_gateway.process(amount=100.00)
+  File "services/payment.py", line 78, in process
+    raise TimeoutError("Payment gateway did not respond within 5 seconds")
+TimeoutError: Payment gateway did not respond within 5 seconds
+        </failure>
+    </testcase>
+    
+    <!-- Failed Test with AssertionError -->
+    <testcase classname="tests.api.test_products" name="test_product_price_calculation" time="0.087">
+        <failure type="AssertionError" message="Expected price 99.99, got 100.00">
+AssertionError: Expected price 99.99, got 100.00
+
+Traceback (most recent call last):
+  File "tests/api/test_products.py", line 123, in test_product_price_calculation
+    assert product.price == 99.99
+AssertionError: Expected price 99.99, got 100.00
+        </failure>
+    </testcase>
+    
+    <!-- Error (not a failure, but an error during test execution) -->
+    <testcase classname="tests.integration.test_database" name="test_database_connection" time="0.234">
+        <error type="ConnectionError" message="Database connection failed">
+ConnectionError: Database connection failed
+
+Traceback (most recent call last):
+  File "tests/integration/test_database.py", line 23, in test_database_connection
+    db = connect_to_database()
+  File "database/connection.py", line 56, in connect_to_database
+    raise ConnectionError("Database connection failed")
+ConnectionError: Database connection failed
+        </error>
+    </testcase>
+    
+    <!-- Skipped Test -->
+    <testcase classname="tests.features.test_beta" name="test_beta_feature_enabled" time="0.000">
+        <skipped message="Beta feature not available in this environment" />
+    </testcase>
+</testsuite>

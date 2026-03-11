@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="8" failures="1" errors="0" skipped="0" time="3.456">
+    <!-- Frontend Test Suite -->
+    <testsuite name="Frontend Tests" tests="5" failures="1" errors="0" skipped="0" time="1.234">
+        <testcase classname="tests.frontend.test_homepage" name="test_homepage_loads" time="0.234">
+        </testcase>
+        
+        <testcase classname="tests.frontend.test_homepage" name="test_navigation_menu" time="0.123">
+        </testcase>
+        
+        <testcase classname="tests.frontend.test_forms" name="test_submit_contact_form" time="0.345">
+        </testcase>
+        
+        <testcase classname="tests.frontend.test_forms" name="test_form_validation" time="0.234">
+            <failure type="AssertionError" message="Validation error message not displayed">
+AssertionError: Validation error message not displayed
+Expected to see error message for invalid email, but it was not shown.
+            </failure>
+        </testcase>
+        
+        <testcase classname="tests.frontend.test_responsive" name="test_mobile_layout" time="0.298">
+        </testcase>
+    </testsuite>
+    
+    <!-- Backend API Test Suite -->
+    <testsuite name="Backend API Tests" tests="3" failures="0" errors="0" skipped="0" time="2.222">
+        <testcase classname="tests.backend.test_api_auth" name="test_api_authentication" time="0.567">
+        </testcase>
+        
+        <testcase classname="tests.backend.test_api_endpoints" name="test_get_all_items" time="0.789">
+        </testcase>
+        
+        <testcase classname="tests.backend.test_api_endpoints" name="test_create_item_via_api" time="0.866">
+        </testcase>
+    </testsuite>
+</testsuites>
