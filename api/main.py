@@ -13,7 +13,15 @@ Features:
 - Health monitoring
 """
 
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, UploadFile, File, Form
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    Depends,
+    BackgroundTasks,
+    UploadFile,
+    File,
+    Form,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -29,8 +37,7 @@ from api.routes import analysis, ingestion, trends
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -40,7 +47,7 @@ app = FastAPI(
     description="Automated test analysis and insights for development teams",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 # CORS middleware for dashboard access
@@ -62,7 +69,7 @@ app.include_router(trends.router, prefix="/api/v1", tags=["Trends"])
 def get_db():
     """
     Database session dependency.
-    
+
     Yields a database session and ensures it's closed after use.
     """
     db = SessionLocal()
@@ -94,7 +101,7 @@ async def shutdown_event():
 async def root():
     """
     Root endpoint with API information.
-    
+
     Returns:
         API metadata and available endpoints
     """
@@ -111,8 +118,8 @@ async def root():
             "flaky_tests": "/api/v1/tests/flaky",
             "slow_tests": "/api/v1/tests/slow",
             "failure_clusters": "/api/v1/failures/clusters",
-            "trends": "/api/v1/trends/{project}"
-        }
+            "trends": "/api/v1/trends/{project}",
+        },
     }
 
 
@@ -120,9 +127,9 @@ async def root():
 async def health_check(db: Session = Depends(get_db)):
     """
     Health check endpoint.
-    
+
     Checks database connectivity and returns system status.
-    
+
     Returns:
         Health status including database connectivity
     """
@@ -134,12 +141,12 @@ async def health_check(db: Session = Depends(get_db)):
         logger.error(f"Database health check failed: {e}")
         db_status = "unhealthy"
         raise HTTPException(status_code=503, detail="Database unavailable")
-    
+
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
         "database": db_status,
-        "version": "1.0.0"
+        "version": "1.0.0",
     }
 
 
@@ -147,29 +154,35 @@ async def health_check(db: Session = Depends(get_db)):
 async def get_statistics(db: Session = Depends(get_db)):
     """
     Get overall API statistics.
-    
+
     Returns:
         System-wide statistics
     """
     try:
         total_runs = db.query(TestRun).count()
-        
+
         # Get project count
         projects = db.query(TestRun.project).distinct().all()
         project_count = len(projects)
-        
+
         # Get latest run
         latest_run = db.query(TestRun).order_by(TestRun.timestamp.desc()).first()
-        
+
         return {
             "total_test_runs": total_runs,
             "total_projects": project_count,
             "projects": [p[0] for p in projects],
-            "latest_run": {
-                "project": latest_run.project if latest_run else None,
-                "timestamp": latest_run.timestamp.isoformat() if latest_run else None,
-                "total_tests": latest_run.total_tests if latest_run else 0
-            } if latest_run else None
+            "latest_run": (
+                {
+                    "project": latest_run.project if latest_run else None,
+                    "timestamp": (
+                        latest_run.timestamp.isoformat() if latest_run else None
+                    ),
+                    "total_tests": latest_run.total_tests if latest_run else 0,
+                }
+                if latest_run
+                else None
+            ),
         }
     except Exception as e:
         logger.error(f"Failed to get statistics: {e}")
@@ -185,8 +198,8 @@ async def http_exception_handler(request, exc):
         content={
             "error": exc.detail,
             "status_code": exc.status_code,
-            "timestamp": datetime.utcnow().isoformat()
-        }
+            "timestamp": datetime.utcnow().isoformat(),
+        },
     )
 
 
@@ -199,23 +212,17 @@ async def general_exception_handler(request, exc):
         content={
             "error": "Internal server error",
             "detail": str(exc),
-            "timestamp": datetime.utcnow().isoformat()
-        }
+            "timestamp": datetime.utcnow().isoformat(),
+        },
     )
 
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     # Get configuration from environment
     host = os.getenv("API_HOST", "0.0.0.0")
     port = int(os.getenv("API_PORT", "8000"))
     reload = os.getenv("API_RELOAD", "false").lower() == "true"
-    
-    uvicorn.run(
-        "api.main:app",
-        host=host,
-        port=port,
-        reload=reload,
-        log_level="info"
-    )
+
+    uvicorn.run("api.main:app", host=host, port=port, reload=reload, log_level="info")

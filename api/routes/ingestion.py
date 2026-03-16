@@ -4,7 +4,15 @@ Ingestion API Routes.
 Endpoints for uploading and processing test reports.
 """
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, BackgroundTasks
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    UploadFile,
+    File,
+    Form,
+    Depends,
+    BackgroundTasks,
+)
 from sqlalchemy.orm import Session
 from pathlib import Path
 import logging
@@ -31,22 +39,18 @@ def get_db():
 
 
 def process_report_file(
-    file_path: str,
-    project: str,
-    branch: str,
-    build_id: Optional[str],
-    db: Session
+    file_path: str, project: str, branch: str, build_id: Optional[str], db: Session
 ) -> dict:
     """
     Process a test report file and store results.
-    
+
     Args:
         file_path: Path to the report file
         project: Project name
         branch: Git branch
         build_id: CI build identifier
         db: Database session
-    
+
     Returns:
         Processing result with statistics
     """
@@ -54,23 +58,23 @@ def process_report_file(
         # Parse the report
         parser = JUnitParser()
         data = parser.parse_file(file_path, project)
-        
+
         # Update metadata
-        test_run_data = data['test_run']
-        test_run_data['project'] = project
-        test_run_data['branch'] = branch
+        test_run_data = data["test_run"]
+        test_run_data["project"] = project
+        test_run_data["branch"] = branch
         # Note: build_id not yet supported in model, can be added later
-        
+
         # Store in database
         repo = TestRunRepository(db)
         test_run = repo.create_test_run(data)
-        
+
         logger.info(
             f"Processed report for {project}/{branch}: "
             f"{test_run.total_tests} tests, "
             f"{test_run.failed} failures"
         )
-        
+
         return {
             "success": True,
             "test_run_id": test_run.id,
@@ -84,8 +88,8 @@ def process_report_file(
                 "failed_tests": test_run.failed,
                 "skipped_tests": test_run.skipped,
                 "error_tests": 0,  # Not tracked separately yet
-                "total_duration": test_run.duration_seconds
-            }
+                "total_duration": test_run.duration_seconds,
+            },
         }
     except Exception as e:
         logger.error(f"Error processing report: {e}")
@@ -93,14 +97,11 @@ def process_report_file(
 
 
 async def process_report_async(
-    temp_file: str,
-    project: str,
-    branch: str,
-    build_id: Optional[str]
+    temp_file: str, project: str, branch: str, build_id: Optional[str]
 ) -> None:
     """
     Background task to process report asynchronously.
-    
+
     Args:
         temp_file: Temporary file path
         project: Project name
@@ -129,7 +130,7 @@ async def ingest_report(
     branch: str = Form(default="main", description="Git branch"),
     build_id: Optional[str] = Form(default=None, description="CI build identifier"),
     async_processing: bool = Form(default=False, description="Process in background"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Upload and process a test report.
@@ -154,39 +155,34 @@ async def ingest_report(
     ```
     """
     # Validate file type
-    if not file.filename.endswith(('.xml', '.junit')):
+    if not file.filename.endswith((".xml", ".junit")):
         raise HTTPException(
-            status_code=400,
-            detail="File must be a JUnit XML report (.xml or .junit)"
+            status_code=400, detail="File must be a JUnit XML report (.xml or .junit)"
         )
-    
+
     # Save uploaded file to temporary location
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.xml') as tmp:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xml") as tmp:
             shutil.copyfileobj(file.file, tmp)
             temp_file = tmp.name
     except Exception as e:
         logger.error(f"Failed to save uploaded file: {e}")
         raise HTTPException(status_code=500, detail="Failed to save uploaded file")
-    
+
     # Process synchronously or asynchronously
     if async_processing:
         # Add to background tasks
         background_tasks.add_task(
-            process_report_async,
-            temp_file,
-            project,
-            branch,
-            build_id
+            process_report_async, temp_file, project, branch, build_id
         )
-        
+
         return {
             "success": True,
             "message": "Report queued for processing",
             "project": project,
             "branch": branch,
             "build_id": build_id,
-            "async": True
+            "async": True,
         }
     else:
         # Process immediately
@@ -211,7 +207,7 @@ async def ingest_batch(
     project: str = Form(..., description="Project name"),
     branch: str = Form(default="main", description="Git branch"),
     build_id: Optional[str] = Form(default=None, description="CI build identifier"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Upload and process multiple test reports in batch.
@@ -238,42 +234,34 @@ async def ingest_batch(
     """
     if not files:
         raise HTTPException(status_code=400, detail="No files provided")
-    
+
     if len(files) > 50:
         raise HTTPException(
-            status_code=400,
-            detail="Maximum 50 files allowed per batch"
+            status_code=400, detail="Maximum 50 files allowed per batch"
         )
-    
+
     # Validate all files
     for file in files:
-        if not file.filename.endswith(('.xml', '.junit')):
+        if not file.filename.endswith((".xml", ".junit")):
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid file type: {file.filename}. Must be JUnit XML."
+                detail=f"Invalid file type: {file.filename}. Must be JUnit XML.",
             )
-    
+
     # Save all files and queue for processing
     queued_files = []
     try:
         for file in files:
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.xml') as tmp:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".xml") as tmp:
                 shutil.copyfileobj(file.file, tmp)
                 temp_file = tmp.name
-                
+
                 # Add to background tasks
                 background_tasks.add_task(
-                    process_report_async,
-                    temp_file,
-                    project,
-                    branch,
-                    build_id
+                    process_report_async, temp_file, project, branch, build_id
                 )
-                
-                queued_files.append({
-                    "filename": file.filename,
-                    "temp_path": temp_file
-                })
+
+                queued_files.append({"filename": file.filename, "temp_path": temp_file})
     except Exception as e:
         logger.error(f"Failed to save batch files: {e}")
         # Clean up any saved files
@@ -283,14 +271,14 @@ async def ingest_batch(
             except:
                 pass
         raise HTTPException(status_code=500, detail="Failed to save batch files")
-    
+
     return {
         "success": True,
         "message": f"{len(queued_files)} reports queued for processing",
         "project": project,
         "branch": branch,
         "build_id": build_id,
-        "files": [item["filename"] for item in queued_files]
+        "files": [item["filename"] for item in queued_files],
     }
 
 
@@ -300,40 +288,42 @@ async def get_test_runs(
     branch: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get test runs with optional filtering.
-    
+
     **Parameters:**
     - **project**: Filter by project name (optional)
     - **branch**: Filter by branch (optional)
     - **limit**: Maximum runs to return (default: 50, max: 200)
     - **offset**: Pagination offset (default: 0)
-    
+
     **Returns:**
     - List of test runs with metadata
     """
     if limit > 200:
         limit = 200
-    
+
     repo = TestRunRepository(db)
-    
+
     try:
         query = db.query(repo.model)
-        
+
         if project:
             query = query.filter(repo.model.project == project)
         if branch:
             query = query.filter(repo.model.branch == branch)
-        
+
         total = query.count()
-        
-        runs = query.order_by(repo.model.timestamp.desc()) \
-                   .limit(limit) \
-                   .offset(offset) \
-                   .all()
-        
+
+        runs = (
+            query.order_by(repo.model.timestamp.desc())
+            .limit(limit)
+            .offset(offset)
+            .all()
+        )
+
         return {
             "total": total,
             "limit": limit,
@@ -350,10 +340,10 @@ async def get_test_runs(
                     "failed_tests": run.failed_tests,
                     "skipped_tests": run.skipped_tests,
                     "error_tests": run.error_tests,
-                    "total_duration": run.total_duration
+                    "total_duration": run.total_duration,
                 }
                 for run in runs
-            ]
+            ],
         }
     except Exception as e:
         logger.error(f"Error retrieving test runs: {e}")
@@ -362,31 +352,26 @@ async def get_test_runs(
 
 @router.get("/runs/{run_id}")
 async def get_test_run(
-    run_id: int,
-    include_test_cases: bool = False,
-    db: Session = Depends(get_db)
+    run_id: int, include_test_cases: bool = False, db: Session = Depends(get_db)
 ):
     """
     Get a specific test run by ID.
-    
+
     **Parameters:**
     - **run_id**: Test run ID
     - **include_test_cases**: Include individual test cases (default: false)
-    
+
     **Returns:**
     - Test run details with optional test cases
     """
     repo = TestRunRepository(db)
-    
+
     try:
         run = repo.get_by_id(run_id)
-        
+
         if not run:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Test run {run_id} not found"
-            )
-        
+            raise HTTPException(status_code=404, detail=f"Test run {run_id} not found")
+
         result = {
             "id": run.id,
             "project": run.project,
@@ -398,9 +383,9 @@ async def get_test_run(
             "failed_tests": run.failed_tests,
             "skipped_tests": run.skipped_tests,
             "error_tests": run.error_tests,
-            "total_duration": run.total_duration
+            "total_duration": run.total_duration,
         }
-        
+
         if include_test_cases:
             result["test_cases"] = [
                 {
@@ -410,11 +395,11 @@ async def get_test_run(
                     "duration": tc.duration,
                     "error_message": tc.error_message,
                     "error_type": tc.error_type,
-                    "stacktrace": tc.stacktrace
+                    "stacktrace": tc.stacktrace,
                 }
                 for tc in run.test_cases
             ]
-        
+
         return result
     except HTTPException:
         raise
@@ -424,36 +409,30 @@ async def get_test_run(
 
 
 @router.delete("/runs/{run_id}")
-async def delete_test_run(
-    run_id: int,
-    db: Session = Depends(get_db)
-):
+async def delete_test_run(run_id: int, db: Session = Depends(get_db)):
     """
     Delete a test run and its test cases.
-    
+
     **Parameters:**
     - **run_id**: Test run ID to delete
-    
+
     **Returns:**
     - Deletion confirmation
     """
     repo = TestRunRepository(db)
-    
+
     try:
         run = repo.get_by_id(run_id)
-        
+
         if not run:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Test run {run_id} not found"
-            )
-        
+            raise HTTPException(status_code=404, detail=f"Test run {run_id} not found")
+
         repo.delete(run_id)
-        
+
         return {
             "success": True,
             "message": f"Test run {run_id} deleted",
-            "run_id": run_id
+            "run_id": run_id,
         }
     except HTTPException:
         raise
