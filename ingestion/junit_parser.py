@@ -337,6 +337,27 @@ Duration: {duration:.1f}s"""
         return f"Error reading test report: {e}"
 
 
+class JUnitParser:
+    """
+    JUnit XML parser class.
+    
+    Provides an object-oriented interface to the JUnit parsing functions.
+    """
+    
+    def parse_file(self, file_path: str, project: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Parse a JUnit XML file.
+        
+        Args:
+            file_path: Path to the JUnit XML file
+            project: Optional project name
+            
+        Returns:
+            Dictionary with test_run and test_cases data
+        """
+        return parse_junit_xml(file_path, project)
+
+
 if __name__ == "__main__":
     # Simple CLI for testing the parser
     import sys

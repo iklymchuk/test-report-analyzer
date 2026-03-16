@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # Test Report Analyzer API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: test-analyzer-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount database directory for persistence
+      - ./data:/app/data
+      # Mount reports directory for easy ingestion
+      - ./reports:/app/reports
+    environment:
+      - DATABASE_URL=sqlite:///data/test_reports.db
+      - LOG_LEVEL=INFO
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - test-analyzer-network
+
+  # Dashboard (Part 4 - will be added later)
+  # dashboard:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.dashboard
+  #   container_name: test-analyzer-dashboard
+  #   ports:
+  #     - "8501:8501"
+  #   environment:
+  #     - API_URL=http://api:8000
+  #   depends_on:
+  #     api:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   networks:
+  #     - test-analyzer-network
+
+volumes:
+  # Persistent database storage
+  test-data:
+
+networks:
+  test-analyzer-network:
+    driver: bridge
