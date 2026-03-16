@@ -6,7 +6,7 @@ output format for most testing frameworks (pytest, JUnit, Maven, etc.).
 """
 
 import xml.etree.ElementTree as ET
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, Optional
 from datetime import datetime
 from pathlib import Path
 

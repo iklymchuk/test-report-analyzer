@@ -22,7 +22,6 @@ from storage.database import SessionLocal
 from analysis.flaky_detector import (
     detect_flaky_tests,
     get_flaky_test_summary,
-    get_flaky_test_details,
 )
 from analysis.slow_detector import (
     detect_slow_tests,

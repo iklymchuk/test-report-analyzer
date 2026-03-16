@@ -12,9 +12,9 @@ Metrics tracked:
 - Outlier detection
 """
 
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, and_
+from sqlalchemy import func, desc
 from datetime import datetime, timedelta
 import statistics
 

@@ -17,7 +17,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 import re
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, and_
+from sqlalchemy import desc
 
 from storage.models import TestRun, TestCase
 

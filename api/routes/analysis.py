@@ -6,7 +6,6 @@ Endpoints for test analysis including flaky tests, slow tests, and failure clust
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
-from typing import Optional
 import logging
 
 from storage.database import SessionLocal

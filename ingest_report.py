@@ -18,12 +18,11 @@ Example:
 import sys
 import argparse
 from pathlib import Path
-from datetime import datetime
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from ingestion.junit_parser import parse_junit_xml, get_junit_summary, JUnitParserError
+from ingestion.junit_parser import parse_junit_xml, JUnitParserError
 from storage.database import SessionLocal, init_db
 from storage.repositories import TestRunRepository
 
@@ -77,7 +76,7 @@ def ingest_test_report(
         print("  ⚠ No project specified, using 'default-project'")
 
     # Display summary
-    print(f"\nTest Run Summary:")
+    print("\nTest Run Summary:")
     print(f"  Project: {test_run['project']}")
     print(f"  Branch: {test_run.get('branch', 'N/A')}")
     print(f"  Commit: {test_run.get('commit_sha', 'N/A')}")
@@ -92,7 +91,7 @@ def ingest_test_report(
     print(f"  Status: {test_run['status']}")
 
     # Step 2: Store in database
-    print(f"\nStep 2: Storing in database...")
+    print("\nStep 2: Storing in database...")
     try:
         db = SessionLocal()
         repo = TestRunRepository(db)
@@ -101,19 +100,19 @@ def ingest_test_report(
         created_run = repo.create_test_run(data)
 
         print(f"✓ Successfully stored test run (ID: {created_run.id})")
-        print(f"  - Test run record created")
+        print("  - Test run record created")
         print(f"  - {len(data['test_cases'])} test case records created")
 
         db.close()
     except Exception as e:
         print(f"✗ Error storing in database: {e}")
         print(
-            f"  Make sure the database is initialized (run: python storage/database.py)"
+            "  Make sure the database is initialized (run: python storage/database.py)"
         )
         return False
 
     # Step 3: Show some statistics
-    print(f"\nStep 3: Analysis...")
+    print("\nStep 3: Analysis...")
 
     # Show failed tests
     failed_tests = [
@@ -148,7 +147,7 @@ def ingest_test_report(
             print(f"  - {full_name}: {test['duration_seconds']:.2f}s")
 
     print(f"\n{'='*60}")
-    print(f"✓ Ingestion Complete!")
+    print("✓ Ingestion Complete!")
     print(f"{'='*60}\n")
 
     return True

@@ -6,8 +6,6 @@ Endpoints for time-series analysis, trends, and anomaly detection.
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-from typing import Optional
 import logging
 
 from storage.database import SessionLocal

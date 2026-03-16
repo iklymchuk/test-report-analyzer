@@ -128,7 +128,7 @@ if __name__ == "__main__":
     # Ensure database is initialized
     try:
         init_db()
-    except:
+    except Exception:
         pass  # May already be initialized
 
     # Generate sample data

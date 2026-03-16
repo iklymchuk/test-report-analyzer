@@ -17,16 +17,11 @@ from fastapi import (
     FastAPI,
     HTTPException,
     Depends,
-    BackgroundTasks,
-    UploadFile,
-    File,
-    Form,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from typing import Optional, List
 from datetime import datetime
 import logging
 import os

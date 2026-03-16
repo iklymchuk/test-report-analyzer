@@ -12,14 +12,13 @@ Metrics tracked over time:
 - Flaky test trends
 """
 
-from typing import List, Dict, Optional, Tuple
-from datetime import datetime, timedelta, date
+from typing import List, Dict
+from datetime import datetime, timedelta
 from collections import defaultdict
 import statistics
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, and_
 
-from storage.models import TestRun, TestCase
+from storage.models import TestRun
 
 
 def get_daily_trends(db: Session, project: str, days: int = 30) -> List[Dict]:

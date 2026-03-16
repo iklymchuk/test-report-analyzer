@@ -268,7 +268,7 @@ async def ingest_batch(
         for item in queued_files:
             try:
                 Path(item["temp_path"]).unlink()
-            except:
+            except Exception:
                 pass
         raise HTTPException(status_code=500, detail="Failed to save batch files")
 
