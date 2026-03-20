@@ -314,13 +314,8 @@ async def get_test_runs(
         if branch:
             query = query.filter(TestRun.branch == branch)
 
-        total = query.count()
-
         runs = (
-            query.order_by(TestRun.timestamp.desc())
-            .limit(limit)
-            .offset(offset)
-            .all()
+            query.order_by(TestRun.timestamp.desc()).limit(limit).offset(offset).all()
         )
 
         return [

@@ -30,6 +30,11 @@ import os
 from storage.database import SessionLocal, init_db
 from storage.models import TestRun
 from api.routes import analysis, ingestion, trends
+from api.routes.trends import (
+    get_project_health_score,
+    get_daily_trend_data,
+    detect_trend_anomalies,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -60,6 +65,7 @@ app.include_router(analysis.router, prefix="/api/v1", tags=["Analysis"])
 app.include_router(ingestion.router, prefix="/api/v1", tags=["Ingestion"])
 app.include_router(trends.router, prefix="/api/v1/trends", tags=["Trends"])
 
+
 # Dependency to get database session
 def get_db():
     """
@@ -75,7 +81,6 @@ def get_db():
 
 
 # Add shorthand routes for dashboard compatibility
-from api.routes.trends import get_project_health_score, get_daily_trend_data, detect_trend_anomalies
 
 
 @app.get("/api/v1/health-score/{project}", tags=["Trends"])
@@ -109,7 +114,9 @@ async def anomalies_shorthand(
     db: Session = Depends(get_db),
 ):
     """Shorthand endpoint for anomalies (dashboard compatibility)."""
-    return await detect_trend_anomalies(project=project, days=days, std_threshold=2.0, db=db)
+    return await detect_trend_anomalies(
+        project=project, days=days, std_threshold=2.0, db=db
+    )
 
 
 @app.on_event("startup")

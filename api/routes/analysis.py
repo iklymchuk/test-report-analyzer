@@ -478,12 +478,18 @@ async def get_test_history(
         for test_case, test_run in results:
             history.append(
                 {
-                    "timestamp": test_run.timestamp.isoformat() if test_run.timestamp else None,
+                    "timestamp": (
+                        test_run.timestamp.isoformat() if test_run.timestamp else None
+                    ),
                     "status": test_case.status,
                     "duration_seconds": test_case.duration_seconds,
                     "branch": test_run.branch,
                     "commit_sha": test_run.commit_sha,
-                    "error_message": test_case.error_message if test_case.status in ["failed", "error"] else None,
+                    "error_message": (
+                        test_case.error_message
+                        if test_case.status in ["failed", "error"]
+                        else None
+                    ),
                 }
             )
 
