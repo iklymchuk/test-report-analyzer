@@ -40,14 +40,22 @@ jobs:
       
       - name: Upload test results to analyzer
         if: always()
+        continue-on-error: true
         run: |
-          curl -X POST "${{ env.TEST_ANALYZER_API_URL }}/api/v1/ingest" \
-            -F "file=@test-results/junit.xml" \
-            -F "project=${{ env.PROJECT_NAME }}" \
-            -F "branch=${{ github.ref_name }}" \
-            -F "build_id=${{ github.run_id }}" \
-            -F "async_processing=false" \
-            || echo "Failed to upload test results"
+          # Only attempt upload if API URL is configured (not default localhost)
+          if [[ "${{ env.TEST_ANALYZER_API_URL }}" == "http://localhost:8000" ]]; then
+            echo "Skipping test result upload (API URL not configured)"
+            echo "To enable: Set TEST_ANALYZER_API_URL secret to your deployed API"
+          else
+            echo "Uploading test results to ${{ env.TEST_ANALYZER_API_URL }}"
+            curl -X POST "${{ env.TEST_ANALYZER_API_URL }}/api/v1/ingest" \
+              -F "file=@test-results/junit.xml" \
+              -F "project=${{ env.PROJECT_NAME }}" \
+              -F "branch=${{ github.ref_name }}" \
+              -F "build_id=${{ github.run_id }}" \
+              -F "async_processing=false" \
+              || echo "✗ Failed to upload test results"
+          fi
       
       - name: Upload test results artifact
         if: always()
@@ -120,25 +128,51 @@ jobs:
       #       your-registry/test-analyzer:latest
       #       your-registry/test-analyzer:${{ github.sha }}
 
+  # Analyze trends job - only runs if TEST_ANALYZER_API_URL secret is configured
+  # This job calls a deployed Test Analyzer API instance to get insights
+  # To enable: Set TEST_ANALYZER_API_URL in repository secrets (e.g., https://test-analyzer.yourcompany.com)
   analyze-trends:
     runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'push'
     
     steps:
+      - name: Check if API is accessible
+        id: api-check
+        run: |
+          if [[ "${{ env.TEST_ANALYZER_API_URL }}" == "http://localhost:8000" ]]; then
+            echo "API URL not configured (using default localhost)"
+            echo "To enable trend analysis: Set TEST_ANALYZER_API_URL secret in repository settings"
+            echo "Example: https://test-analyzer.yourcompany.com"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "Testing API accessibility at ${{ env.TEST_ANALYZER_API_URL }}"
+            # Test if API is accessible
+            if curl -f -s --max-time 5 "${{ env.TEST_ANALYZER_API_URL }}/health" > /dev/null 2>&1; then
+              echo "✓ API is accessible"
+              echo "skip=false" >> $GITHUB_OUTPUT
+            else
+              echo "✗ API is not accessible at ${{ env.TEST_ANALYZER_API_URL }}"
+              echo "skip=true" >> $GITHUB_OUTPUT
+            fi
+          fi
+      
       - name: Get project health score
+        if: steps.api-check.outputs.skip != 'true'
         run: |
           curl -X GET "${{ env.TEST_ANALYZER_API_URL }}/api/v1/trends/health-score?project=${{ env.PROJECT_NAME }}&days=7" \
             -H "accept: application/json" \
             || echo "Failed to get health score"
       
       - name: Check for flaky tests
+        if: steps.api-check.outputs.skip != 'true'
         run: |
           curl -X GET "${{ env.TEST_ANALYZER_API_URL }}/api/v1/tests/flaky?project=${{ env.PROJECT_NAME }}&lookback_runs=20&min_flakiness=0.2" \
             -H "accept: application/json" \
             || echo "Failed to check flaky tests"
       
       - name: Check for performance regressions
+        if: steps.api-check.outputs.skip != 'true'
         run: |
           curl -X GET "${{ env.TEST_ANALYZER_API_URL }}/api/v1/tests/slow/regressions?project=${{ env.PROJECT_NAME }}&lookback_days=7&threshold_increase=0.2" \
             -H "accept: application/json" \

@@ -22,6 +22,7 @@ from typing import Optional
 
 from storage.database import SessionLocal
 from storage.repositories import TestRunRepository
+from storage.models import TestRun
 from ingestion.junit_parser import JUnitParser
 
 logger = logging.getLogger(__name__)
@@ -305,46 +306,39 @@ async def get_test_runs(
     if limit > 200:
         limit = 200
 
-    repo = TestRunRepository(db)
-
     try:
-        query = db.query(repo.model)
+        query = db.query(TestRun)
 
         if project:
-            query = query.filter(repo.model.project == project)
+            query = query.filter(TestRun.project == project)
         if branch:
-            query = query.filter(repo.model.branch == branch)
+            query = query.filter(TestRun.branch == branch)
 
         total = query.count()
 
         runs = (
-            query.order_by(repo.model.timestamp.desc())
+            query.order_by(TestRun.timestamp.desc())
             .limit(limit)
             .offset(offset)
             .all()
         )
 
-        return {
-            "total": total,
-            "limit": limit,
-            "offset": offset,
-            "runs": [
-                {
-                    "id": run.id,
-                    "project": run.project,
-                    "branch": run.branch,
-                    "build_id": run.build_id,
-                    "timestamp": run.timestamp.isoformat(),
-                    "total_tests": run.total_tests,
-                    "passed_tests": run.passed_tests,
-                    "failed_tests": run.failed_tests,
-                    "skipped_tests": run.skipped_tests,
-                    "error_tests": run.error_tests,
-                    "total_duration": run.total_duration,
-                }
-                for run in runs
-            ],
-        }
+        return [
+            {
+                "id": run.id,
+                "project": run.project,
+                "branch": run.branch,
+                "commit_sha": run.commit_sha,
+                "timestamp": run.timestamp.isoformat() if run.timestamp else None,
+                "total_tests": run.total_tests,
+                "passed": run.passed,
+                "failed": run.failed,
+                "skipped": run.skipped,
+                "duration_seconds": run.duration_seconds,
+                "status": run.status,
+            }
+            for run in runs
+        ]
     except Exception as e:
         logger.error(f"Error retrieving test runs: {e}")
         raise HTTPException(status_code=500, detail=str(e))

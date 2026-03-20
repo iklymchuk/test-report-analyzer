@@ -17,6 +17,7 @@ from fastapi import (
     FastAPI,
     HTTPException,
     Depends,
+    Query,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -57,8 +58,7 @@ app.add_middleware(
 # Include routers
 app.include_router(analysis.router, prefix="/api/v1", tags=["Analysis"])
 app.include_router(ingestion.router, prefix="/api/v1", tags=["Ingestion"])
-app.include_router(trends.router, prefix="/api/v1", tags=["Trends"])
-
+app.include_router(trends.router, prefix="/api/v1/trends", tags=["Trends"])
 
 # Dependency to get database session
 def get_db():
@@ -72,6 +72,44 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+# Add shorthand routes for dashboard compatibility
+from api.routes.trends import get_project_health_score, get_daily_trend_data, detect_trend_anomalies
+
+
+@app.get("/api/v1/health-score/{project}", tags=["Trends"])
+async def health_score_shorthand(
+    project: str,
+    lookback_days: int = Query(7, ge=1, le=30),
+    db: Session = Depends(get_db),
+):
+    """Shorthand endpoint for health score (dashboard compatibility)."""
+    return await get_project_health_score(project=project, days=lookback_days, db=db)
+
+
+@app.get("/api/v1/trends/{project}", tags=["Trends"])
+async def trends_shorthand(
+    project: str, days: int = Query(30, ge=1, le=365), db: Session = Depends(get_db)
+):
+    """Shorthand endpoint for daily trends (dashboard compatibility)."""
+    result = await get_daily_trend_data(project=project, days=days, db=db)
+    return {
+        "project": project,
+        "days": days,
+        "data_points": result.get("trends", []),
+        "trend_direction": "stable",  # Simple placeholder
+    }
+
+
+@app.get("/api/v1/anomalies/{project}", tags=["Trends"])
+async def anomalies_shorthand(
+    project: str,
+    days: int = Query(30, ge=7, le=365),
+    db: Session = Depends(get_db),
+):
+    """Shorthand endpoint for anomalies (dashboard compatibility)."""
+    return await detect_trend_anomalies(project=project, days=days, std_threshold=2.0, db=db)
 
 
 @app.on_event("startup")

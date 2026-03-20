@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 import logging
 
 from storage.database import SessionLocal
+from storage.models import TestCase, TestRun
 from analysis.flaky_detector import (
     detect_flaky_tests,
     get_flaky_test_summary,
@@ -437,4 +438,61 @@ async def get_related_failures_endpoint(
         }
     except Exception as e:
         logger.error(f"Error finding related failures: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/tests/history")
+async def get_test_history(
+    project: str = Query(..., description="Project name"),
+    test_name: str = Query(..., description="Test name to get history for"),
+    limit: int = Query(10, ge=1, le=100, description="Maximum number of results"),
+    db: Session = Depends(get_db),
+):
+    """
+    Get execution history for a specific test.
+
+    **Parameters:**
+    - **project**: Project name
+    - **test_name**: Full test name
+    - **limit**: Maximum results to return (1-100)
+
+    **Returns:**
+    - List of test executions with timestamps, status, and duration
+    """
+    try:
+        # Query test cases with their run information
+        results = (
+            db.query(TestCase, TestRun)
+            .join(TestRun, TestCase.test_run_id == TestRun.id)
+            .filter(TestRun.project == project)
+            .filter(
+                (TestCase.name == test_name)
+                | (TestCase.classname + "::" + TestCase.name == test_name)
+            )
+            .order_by(TestRun.timestamp.desc())
+            .limit(limit)
+            .all()
+        )
+
+        history = []
+        for test_case, test_run in results:
+            history.append(
+                {
+                    "timestamp": test_run.timestamp.isoformat() if test_run.timestamp else None,
+                    "status": test_case.status,
+                    "duration_seconds": test_case.duration_seconds,
+                    "branch": test_run.branch,
+                    "commit_sha": test_run.commit_sha,
+                    "error_message": test_case.error_message if test_case.status in ["failed", "error"] else None,
+                }
+            )
+
+        return {
+            "project": project,
+            "test": test_name,
+            "executions": len(history),
+            "history": history,
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving test history: {e}")
         raise HTTPException(status_code=500, detail=str(e))
