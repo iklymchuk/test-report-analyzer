@@ -1,6 +1,5 @@
 """Tests for analysis modules."""
 
-import pytest
 from analysis.flaky_detector import detect_flaky_tests
 from analysis.slow_detector import detect_slow_tests
 from analysis.clustering import cluster_failures

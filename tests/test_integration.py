@@ -3,7 +3,6 @@
 import pytest
 import tempfile
 import os
-from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from storage.models import Base, TestRun, TestCase
@@ -31,7 +30,7 @@ def test_db():
     engine.dispose()
     try:
         os.unlink(db_path)
-    except:
+    except OSError:
         pass
 
 
